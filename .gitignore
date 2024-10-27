@@ -6,7 +6,7 @@ ENV/
 
 # Daten und große Dateien
 scripts/
-vector_store/
+
 
 # Konfigurationsdateien
 .env
