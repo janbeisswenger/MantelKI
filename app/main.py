@@ -6,8 +6,9 @@ from dotenv import load_dotenv
 from utils import load_document, split_into_chunks
 from embedding import LegalEmbeddingModel
 from vector_store import VectorStore
-import pickle
+from chatgpt_handler import ChatGPTHandler
 
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 # Konfiguriere das Logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -40,32 +41,39 @@ def initialize_vector_store():
         print("Error: Embeddings have an unexpected format.")
 
 
-def ask_question():
+def ask_question(chatgpt_handler: ChatGPTHandler):
     # Vektorspeicher laden
     vector_store = VectorStore()
 
-    # Initialisiere das rechtsspezifische Embedding-Modell
-    embedding_model = LegalEmbeddingModel()
+    # Benutzerfrage eingeben
+    question = input("Stelle eine Frage (oder 'exit' zum Beenden): ")
+    if question.lower() == 'exit' or not question.strip():
+        return
 
-    while True:
-        # Benutzerfrage eingeben
-        question = input("Stelle eine Frage (oder 'exit' zum Beenden): ")
-        if question.lower() == 'exit':
-            break
+    # Embedding der Frage erstellen
+    question_embedding_all = chatgpt_handler.embedding_model.get_embeddings([question])
+    if not question_embedding_all:
+        print("Error generating embedding for the question.")
+        return
+    question_embedding = question_embedding_all[0]
 
-        # Embedding der Frage erstellen
-        question_embedding_all = embedding_model.get_embeddings([question])
-        if not question_embedding_all:
-            print("Error generating embedding for the question.")
-            continue
-        question_embedding = question_embedding_all[0]
+    # Suche im Vektorspeicher nach den ähnlichsten Textabschnitten
+    results = vector_store.search(question_embedding)
+    print("\nÄhnlichste Textabschnitte:")
+    for result in results:
+        print(result)
+    print("\n")
 
-        # Suche im Vektorspeicher nach den ähnlichsten Textabschnitten
-        results = vector_store.search(question_embedding)
-        print("\nÄhnlichste Textabschnitte:")
-        for result in results:
-            print(result)
-        print("\n")
+    # Kombinieren der ähnlichen Chunks zu einem Kontext
+    context = "\n".join(results)
+
+    # Anfrage an ChatGPT senden
+    answer = chatgpt_handler.get_response(question=question, context=context)
+
+    # Ausgabe der Antwort
+    print("\nAntwort von ChatGPT:\n")
+    print(answer)
+    print("\n" + "-" * 50 + "\n")
 
 
 def normalize_text(text: str) -> str:
@@ -79,41 +87,23 @@ def normalize_text(text: str) -> str:
     return ' '.join(text.split())
 
 
-def check_exact_paragraph(paragraph: str):
-    """
-    Überprüft, ob ein exakter Paragraph in den Chunks vorhanden ist.
-
-    :param paragraph: Der exakte Paragraph, der überprüft werden soll.
-    """
-    # Normalisieren des Eingabeparagraphen
-    normalized_paragraph = normalize_text(paragraph)
-
-    # Laden der Metadaten
-    with open("vector_store/metadata.pkl", 'rb') as f:
-        metadata = pickle.load(f)
-
-    # Normalisieren der Metadaten-Chunks für den Vergleich
-    normalized_metadata = [normalize_text(chunk) for chunk in metadata]
-
-    # Überprüfen, ob der exakte Paragraph in den normalisierten Metadaten vorhanden ist
-    if normalized_paragraph in normalized_metadata:
-        print("Der exakte Paragraph ist als eigener Chunk vorhanden.")
-    else:
-        print("Der exakte Paragraph ist NICHT als eigener Chunk vorhanden.")
-
-
 if __name__ == "__main__":
     # Initialisieren Sie den Vektorspeicher nur, wenn er noch nicht existiert
     if not os.path.exists("vector_store/faiss.index") or not os.path.exists("vector_store/metadata.pkl"):
         initialize_vector_store()
 
-    # Beispiel Paragraph
-    exakter_paragraph = """
-    setzt Folgerungen gegebenenfalls durch Anpassungen der Verordnung um. 
-    """
+    # Initialisierung des ChaatGPT Handlers
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        logging.error("OPENAI_API_KEY ist nicht gesetzt.")
+        exit(1)
 
-    # Überprüfen, ob der exakte Paragraph als Chunk vorhanden ist
-    check_exact_paragraph(exakter_paragraph)
+    # Initialisiere das rechtsspezifische Embedding-Modell für ChatGPTHandler
+    embedding_model = LegalEmbeddingModel()
 
-    # Frageschleife starten
-    ask_question()
+    # Initialisiere den ChatGPTHandler mit dem API-Schlüssel und dem Embedding-Modell
+    chatgpt_handler = ChatGPTHandler(api_key=api_key)
+    chatgpt_handler.embedding_model = embedding_model  # Übergibt das Embedding-Modell an den Handler
+
+    # Einmalige Frageschleife starten
+    ask_question(chatgpt_handler)

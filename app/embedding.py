@@ -10,8 +10,6 @@ class LegalEmbeddingModel:
         self.model = AutoModel.from_pretrained(model_name)
         self.model.eval()
 
-
-
     def get_embeddings(self, texts: List[str]) -> List[List[float]]:
         embeddings = []
         try:
@@ -23,8 +21,7 @@ class LegalEmbeddingModel:
                     cls_embedding = outputs.last_hidden_state[:, 0, :].squeeze().tolist()
                     embeddings.append(cls_embedding)
             # Debug-Ausgabe: Dimension der Embeddings prüfen
-            if embeddings:
-                print(f"Generated embedding of length: {lexiten(embeddings[0])}")
+
             return embeddings
         except Exception as e:
             logging.error(f"Error in get_embeddings: {str(e)}")
