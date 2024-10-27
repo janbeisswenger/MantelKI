@@ -1,0 +1,24 @@
+# Virtuelle Umgebungen
+venv/
+env/
+.virtualenv/
+ENV/
+
+# Daten und große Dateien
+data/
+scripts/
+vector_store/
+
+# Konfigurationsdateien
+.env
+
+# IDEs und Editoren
+.idea/
+.vscode/
+
+# Systemdateien
+.DS_Store
+
+# Python Cache
+__pycache__/
+*.pyc
