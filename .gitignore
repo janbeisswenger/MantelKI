@@ -2,7 +2,7 @@
 venv/
 env/
 .virtualenv/
-vectorstore/
+vector_store/
 ENV/
 
 # Daten und große Dateien
