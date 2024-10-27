@@ -23,8 +23,22 @@ class ChatGPTHandler:
         """
         try:
             messages = [
-                {"role": "system", "content": "Du bist ein hilfreicher Assistent."},
-                {"role": "user", "content": f"Kontext:\n{context}\n\nFrage: {question}\nAntwort:"}
+                {
+                    "role": "system",
+                    "content": (
+                        "Du bist ein fachkundiger Assistent mit tiefgehender Expertise im deutschen Umweltrecht, "
+                        "insbesondere im Bereich Bodenschutz und Abfallwirtschaft. "
+                        "Bitte beantworte Fragen technisch präzise und detailliert, unter Bezugnahme auf relevante Gesetze, "
+                        "Verordnungen und Richtlinien wie die Ersatzbaustoffverordnung (EBV), LAGA PN 98, LAGA M 32, die Deponieverordnung (DepV), "
+                        "das Bundes-Bodenschutzgesetz (BBodSchG) und die Bundes-Bodenschutz- und Altlastenverordnung (BBodSchV). "
+                        "Zitiere relevante Paragraphen und Absätze aus den Gesetzestexten, soweit sie zur Beantwortung der Frage beitragen. "
+                        "Verwende einen formellen und fachlichen Sprachstil und gib konkrete, eindeutige Antworten."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": f"Kontext:\n{context}\n\nFrage: {question}"
+                }
             ]
             logging.info("Sende Anfrage an ChatGPT.")
             response = openai.chat.completions.create(
