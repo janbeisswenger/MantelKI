@@ -5,7 +5,6 @@ env/
 ENV/
 
 # Daten und große Dateien
-data/
 scripts/
 vector_store/
 
